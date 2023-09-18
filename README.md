@@ -1,15 +1,11 @@
-# Elysia with Bun runtime
+# Simple Auth flow
 
-## Getting Started
-To get started with this template, simply paste this command into your terminal:
-```bash
-bun create elysia ./elysia-example
-```
+## Tech used:
 
-## Development
-To start the development server run:
-```bash
-bun run dev
-```
+- Runtime: Bun
+- Web Framework: ElysiaJS
+- Database ORM: Prisma
 
-Open http://localhost:3000/ with your browser to see the result.
+## Features:
+
+Ability to create a user, login, reset password and authorization to specefic resources.

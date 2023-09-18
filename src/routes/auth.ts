@@ -40,7 +40,11 @@ export const auth = new Elysia()
         success: true,
         statusMessage: "Created user successfully",
         data: {
-          user: newUser,
+          user: {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email
+          },
         },
       };
     },
@@ -146,5 +150,46 @@ export const auth = new Elysia()
       body: "resetPassword",
     }
   )
+  .post("/reset/:token", async ({ params, set, body, }) => {
+    const { token } = params;
+    const { password, userId } = body
+    const user = db.users.findUnique({
+      where: {
+        id: userId,
+        resetToken: token,
+        resetTokenExpiration: { gt: new Date(Date.now()) }
+      }
+    })
+    if (!user) {
+      set.status = 404;
+      return {
+        success: false,
+        status_message: "User not found",
+        data: null
+      }
+    }
+    const newPassword = await Bun.password.hash(password);
+    await db.users.update({
+      where: {
+        id: userId
+      },
+      data: {
+        hashedPassword: newPassword,
+        resetToken: null,
+        resetTokenExpiration: null
+      }
+    })
+    return {
+      success: true,
+      status_message: "Created new password for the user",
+      data: {
+        userId
+      }
+    }
+  },
+    {
+      body: 'newPassword',
+      params: t.Object({ token: t.String() })
+    })
   .use(isAuthenticated)
   .get("/", ({ response }) => response);
