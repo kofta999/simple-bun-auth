@@ -10,4 +10,7 @@ export const authModel = new Elysia().model({
     email: t.String(),
     password: t.String(),
   }),
+  resetPassword: t.Object({
+    email: t.String(),
+  }),
 });

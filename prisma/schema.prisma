@@ -11,8 +11,10 @@ datasource db {
 }
 
 model users {
-  id             String @id @default(auto()) @map("_id") @db.ObjectId
-  name           String
-  email          String @unique
-  hashedPassword String
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  name                 String
+  email                String    @unique
+  hashedPassword       String
+  resetToken           String?
+  resetTokenExpiration DateTime?
 }

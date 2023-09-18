@@ -3,6 +3,11 @@ import { db } from "../libs/prisma";
 import { setup } from "../libs/setup";
 import { authModel } from "../models/auth.model";
 import { isAuthenticated } from "../middlewares/auth.middleware";
+import { randomBytes } from "crypto";
+import sgMail from "@sendgrid/mail";
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY!)
+
 
 export const auth = new Elysia()
   .use(authModel)
@@ -11,7 +16,7 @@ export const auth = new Elysia()
     "signup",
     async ({ body, set }) => {
       const { name, email, password } = body;
-      const existingUser = await db.user.findUnique({
+      const existingUser = await db.users.findUnique({
         where: { email },
         select: { id: true },
       });
@@ -24,7 +29,7 @@ export const auth = new Elysia()
         };
       }
       const hashedPassword = await Bun.password.hash(password);
-      const newUser = await db.user.create({
+      const newUser = await db.users.create({
         data: {
           name,
           email,
@@ -47,7 +52,7 @@ export const auth = new Elysia()
     "/login",
     async ({ jwt, setCookie, body, set }) => {
       const { email, password } = body;
-      const existingUser = await db.user.findUnique({
+      const existingUser = await db.users.findUnique({
         where: {
           email,
         },
@@ -90,6 +95,55 @@ export const auth = new Elysia()
     },
     {
       body: "login",
+    }
+  )
+  .post(
+    "/reset",
+    async ({ body, set }) => {
+      const { email } = body;
+      const token = randomBytes(32).toString("hex");
+      const user = await db.users.findUnique({
+        where: { email }
+      })
+      if (!user) {
+        set.status = 404;
+        return {
+          success: false,
+          status_message: "User not found",
+          data: null,
+        };
+      }
+
+      await db.users.update({
+        where: {
+          email
+        },
+        data: {
+          resetToken: token,
+          resetTokenExpiration: new Date(Date.now() + 3600000)
+        }
+      })
+      await sgMail.send(
+        {
+          to: email,
+          from: "mostafaxxx555@gmail.com",
+          subject: "Password reset",
+          html: `
+          <p>You requested a password reset</p>
+          <p>Click this to reset your password, valid only for 1 hour</p>
+          <a href="http://localhost:3000/reset/${token}">Link</a>`,
+        }
+      )
+      console.log(`http://localhost:3000/reset/${token}`);
+      return {
+        sucess: true,
+        status_message: "Successfully sent a password reset email",
+        data: null
+      }
+
+    },
+    {
+      body: "resetPassword",
     }
   )
   .use(isAuthenticated)
